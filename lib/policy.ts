@@ -10,6 +10,7 @@ import { dirname } from "node:path";
 export class PolicyError extends Error {}
 export class DailyCapExceeded extends PolicyError {}
 export class DuplicateAction extends PolicyError {}
+export class UnresolvedAction extends PolicyError {}
 export class CircuitOpen extends PolicyError {}
 
 type ActionStatus = "pending" | "succeeded" | "uncertain";
@@ -144,6 +145,16 @@ export class PolicyEngine {
     if (existing) {
       throw new DuplicateAction(
         `action ${key} already has status ${existing.status}`,
+      );
+    }
+    const unresolved = Object.entries(this.state.actions).find(
+      ([, action]) =>
+        action.status === "pending" || action.status === "uncertain",
+    );
+    if (unresolved) {
+      const [unresolvedKey, action] = unresolved;
+      throw new UnresolvedAction(
+        `action ${unresolvedKey} remains ${action.status}; reconcile it before reserving a new transfer`,
       );
     }
     this.state.actions[key] = {

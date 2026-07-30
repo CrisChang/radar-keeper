@@ -8,6 +8,7 @@ import {
   DuplicateAction,
   parseNativeAmount,
   PolicyEngine,
+  UnresolvedAction,
 } from "../lib/policy";
 
 function policy(cap = "0.00005"): PolicyEngine {
@@ -40,6 +41,16 @@ test("same action cannot be reserved twice", () => {
   assert.throws(
     () => engine.reserveAction("signal-1:protect"),
     DuplicateAction,
+  );
+});
+
+test("an unresolved action blocks a differently keyed transfer", () => {
+  const engine = policy();
+  engine.reserveAction("signal-1:protect");
+  engine.markActionUncertain("signal-1:protect", "client timed out");
+  assert.throws(
+    () => engine.reserveAction("signal-2:protect"),
+    UnresolvedAction,
   );
 });
 

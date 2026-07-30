@@ -22,6 +22,8 @@ wallet. Radar Keeper treats execution discipline as part of the product:
 - KeeperHub must report an enabled testnet;
 - every transaction is simulated before signing;
 - live requests include an idempotency key;
+- interrupted broadcasts retry with the exact same body and idempotency key;
+- an unresolved broadcast blocks every differently keyed transfer;
 - a daily value cap limits agent spend;
 - repeated failures open a circuit breaker;
 - every step is recorded for judges and operators.
@@ -47,6 +49,25 @@ transaction link + audit trail
 The KeeperHub sequence follows its official safe first-write guidance:
 choose an enabled testnet, simulate the exact request, broadcast once with an
 `Idempotency-Key`, and keep the returned execution and transaction proof.
+If the client times out while KeeperHub is still executing, Radar Keeper
+replays the same request with the same key. KeeperHub then returns the original
+execution instead of creating a second transaction. If no proof can be
+recovered, the action remains unresolved and the policy engine blocks new
+transfers until a human reconciles it.
+
+## Verified onchain execution
+
+The end-to-end KeeperHub path has landed a real Ethereum Sepolia transaction:
+
+- amount: `0.00001 Sepolia ETH`;
+- block: `11379904`;
+- status: successful;
+- proof:
+  [0x61078261...0cc46b3b](https://sepolia.etherscan.io/tx/0x610782610a42209ff816965eb618e8ec6c5d254f9f763f04f11b19da0cc46b3b).
+
+The original HTTP call timed out just before KeeperHub returned. The chain
+confirmed the transfer, and that incident is covered by the recovery tests in
+this repository.
 
 ## Run locally
 

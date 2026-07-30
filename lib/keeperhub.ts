@@ -3,9 +3,24 @@ import type { TransferRequest } from "./types";
 
 interface KeeperHubErrorBody {
   error?: string;
+  code?: string;
   detail?: string;
   hint?: string;
+  originalExecutionId?: string;
   request_id?: string;
+}
+
+export class KeeperHubHttpError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string,
+    readonly originalExecutionId?: string,
+    readonly retryAfterMs?: number,
+  ) {
+    super(message);
+    this.name = "KeeperHubHttpError";
+  }
 }
 
 export interface KeeperHubChain {
@@ -20,10 +35,55 @@ export interface KeeperHubExecution {
   status?: string;
   transactionHash?: string;
   transactionLink?: string;
+  recoveryAttempts?: number;
+  recoveredFrom?: string;
   [key: string]: unknown;
 }
 
 type FetchLike = typeof fetch;
+type Sleep = (milliseconds: number) => Promise<void>;
+
+export interface KeeperHubClientOptions {
+  requestTimeoutMs?: number;
+  executionAttempts?: number;
+  recoveryDelayMs?: number;
+  sleep?: Sleep;
+}
+
+function wait(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function errorName(error: unknown): string {
+  return typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    typeof error.name === "string"
+    ? error.name
+    : "";
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function isRecoverableExecutionError(error: unknown): boolean {
+  if (error instanceof KeeperHubHttpError) {
+    return (
+      (error.status === 409 && error.code === "idempotency_in_progress") ||
+      error.status === 408 ||
+      error.status === 429 ||
+      error.status >= 500
+    );
+  }
+
+  const name = errorName(error);
+  return (
+    name === "AbortError" ||
+    name === "TimeoutError" ||
+    error instanceof TypeError
+  );
+}
 
 function unwrapData(value: unknown): unknown {
   if (
@@ -71,16 +131,26 @@ function normalizeChains(payload: unknown): KeeperHubChain[] {
 }
 
 export class KeeperHubClient {
+  private readonly requestTimeoutMs: number;
+  private readonly executionAttempts: number;
+  private readonly recoveryDelayMs: number;
+  private readonly sleep: Sleep;
+
   constructor(
     private readonly apiKey: string,
     private readonly baseUrl = "https://app.keeperhub.com/api",
     private readonly fetchImpl: FetchLike = fetch,
+    options: KeeperHubClientOptions = {},
   ) {
     if (!apiKey.startsWith("kh_")) {
       throw new Error(
         "KEEPERHUB_API_KEY must be an organization key beginning with kh_",
       );
     }
+    this.requestTimeoutMs = Math.max(1, options.requestTimeoutMs ?? 15_000);
+    this.executionAttempts = Math.max(1, options.executionAttempts ?? 3);
+    this.recoveryDelayMs = Math.max(0, options.recoveryDelayMs ?? 750);
+    this.sleep = options.sleep ?? wait;
   }
 
   private async request(
@@ -96,7 +166,7 @@ export class KeeperHubClient {
         "x-request-id": randomUUID(),
         ...init.headers,
       },
-      signal: init.signal ?? AbortSignal.timeout(15_000),
+      signal: init.signal ?? AbortSignal.timeout(this.requestTimeoutMs),
     });
 
     const body = (await response.json().catch(() => ({}))) as
@@ -109,8 +179,19 @@ export class KeeperHubClient {
         errorBody.detail,
         errorBody.hint,
       ].filter(Boolean);
-      throw new Error(
+      const retryAfterHeader = response.headers.get("retry-after");
+      const retryAfterSeconds =
+        retryAfterHeader === null ? undefined : Number(retryAfterHeader);
+      throw new KeeperHubHttpError(
         `KeeperHub HTTP ${response.status}: ${pieces.join(" — ") || "request failed"}`,
+        response.status,
+        errorBody.code,
+        errorBody.originalExecutionId,
+        retryAfterSeconds !== undefined &&
+        Number.isFinite(retryAfterSeconds) &&
+        retryAfterSeconds >= 0
+          ? retryAfterSeconds * 1_000
+          : undefined,
       );
     }
     return unwrapData(body);
@@ -144,11 +225,39 @@ export class KeeperHubClient {
     request: TransferRequest,
     idempotencyKey: string,
   ): Promise<KeeperHubExecution> {
-    return (await this.request("/execute/transfer", {
-      method: "POST",
-      headers: { "idempotency-key": idempotencyKey },
-      body: JSON.stringify(request),
-    })) as KeeperHubExecution;
+    const body = JSON.stringify(request);
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt < this.executionAttempts; attempt += 1) {
+      try {
+        const execution = (await this.request("/execute/transfer", {
+          method: "POST",
+          headers: { "idempotency-key": idempotencyKey },
+          body,
+        })) as KeeperHubExecution;
+        return attempt === 0
+          ? execution
+          : {
+              ...execution,
+              recoveryAttempts: attempt,
+              recoveredFrom: errorMessage(lastError),
+            };
+      } catch (error) {
+        lastError = error;
+        const hasAnotherAttempt = attempt + 1 < this.executionAttempts;
+        if (!hasAnotherAttempt || !isRecoverableExecutionError(error)) {
+          throw error;
+        }
+
+        const retryAfterMs =
+          error instanceof KeeperHubHttpError ? error.retryAfterMs : undefined;
+        const delay =
+          retryAfterMs ?? this.recoveryDelayMs * 2 ** attempt;
+        await this.sleep(delay);
+      }
+    }
+
+    throw lastError;
   }
 
   async getExecutionStatus(

@@ -228,6 +228,16 @@ export async function runAgent(
 
   try {
     const submitted = await client.executeTransfer(request, key);
+    if (
+      typeof submitted.recoveryAttempts === "number" &&
+      submitted.recoveryAttempts > 0
+    ) {
+      audit("keeperhub_execution_recovered", {
+        idempotencyKey: key,
+        recoveryAttempts: submitted.recoveryAttempts,
+        recoveredFrom: submitted.recoveredFrom,
+      });
+    }
     const execution = await finalExecution(client, submitted);
     const fields = transactionFields(execution);
     const transactionLink =
