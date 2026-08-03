@@ -11,5 +11,6 @@ recovery/
 *.p12
 *.keystore
 *.tsbuildinfo
+docs/submission/assets/*.aiff
 .DS_Store
 npm-debug.log*

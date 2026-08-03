@@ -7,6 +7,7 @@ import type {
   AgentRunResult,
   SignalMode,
 } from "@/lib/types";
+import { VERIFIED_EXECUTION } from "@/lib/verified-execution";
 
 interface Health {
   status: string;
@@ -26,6 +27,10 @@ function short(value: string | undefined): string {
   return value.length > 28
     ? `${value.slice(0, 14)}…${value.slice(-10)}`
     : value;
+}
+
+function shortAddress(value: string): string {
+  return `${value.slice(0, 8)}…${value.slice(-6)}`;
 }
 
 export default function Home() {
@@ -222,6 +227,79 @@ export default function Home() {
             ) : null}
           </div>
         ))}
+      </section>
+
+      <section className="proofPanel" id="proof" aria-label="Verified execution proof">
+        <div className="proofStory">
+          <div className="proofStatus">
+            <span className="proofPulse" />
+            VERIFIED ONCHAIN EXECUTION
+          </div>
+          <h2>
+            One risk signal.
+            <br />
+            One guarded transaction.
+          </h2>
+          <p>
+            KeeperHub landed the action on Ethereum Sepolia. When the client
+            response timed out, Radar Keeper reconciled the chain result and
+            blocked any duplicate transfer.
+          </p>
+          <a
+            className="proofLink"
+            href={VERIFIED_EXECUTION.transactionLink}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Inspect transaction on Etherscan ↗
+          </a>
+        </div>
+
+        <div className="proofReceipt">
+          <div className="receiptHead">
+            <div>
+              <span>Transaction receipt</span>
+              <strong>CONFIRMED</strong>
+            </div>
+            <div className="confirmedMark">✓</div>
+          </div>
+
+          <dl className="receiptGrid">
+            <div>
+              <dt>Network</dt>
+              <dd>{VERIFIED_EXECUTION.network}</dd>
+            </div>
+            <div>
+              <dt>Block</dt>
+              <dd>{VERIFIED_EXECUTION.blockNumber.toLocaleString()}</dd>
+            </div>
+            <div>
+              <dt>Amount</dt>
+              <dd>{VERIFIED_EXECUTION.amount}</dd>
+            </div>
+            <div>
+              <dt>Finality</dt>
+              <dd>Success · status 1</dd>
+            </div>
+          </dl>
+
+          <div className="route">
+            <div>
+              <span>KeeperHub wallet</span>
+              <code>{shortAddress(VERIFIED_EXECUTION.from)}</code>
+            </div>
+            <div className="routeArrow">→</div>
+            <div>
+              <span>Allowlisted recipient</span>
+              <code>{shortAddress(VERIFIED_EXECUTION.to)}</code>
+            </div>
+          </div>
+
+          <div className="recoveryNote">
+            <span>RECOVERY PROOF</span>
+            <p>{VERIFIED_EXECUTION.recovery}</p>
+          </div>
+        </div>
       </section>
 
       <section className="grid">

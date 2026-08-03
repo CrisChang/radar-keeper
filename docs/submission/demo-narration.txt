@@ -1,0 +1,11 @@
+Most AI agent demos stop after making a decision. Radar Keeper focuses on the dangerous last mile: turning a market-risk signal into one safe, observable onchain action through KeeperHub.
+
+The agent can use live Coinbase candles or a deterministic demo signal. It only selects protect reserve when both the price-drop and confidence thresholds are crossed.
+
+Before execution, a hard policy layer requires a supported testnet, an allowlisted recipient, simulation of the exact request, a daily spend cap, and a closed circuit breaker. Live broadcast stays separately locked, so the normal demo cannot move funds.
+
+This proof is real. KeeperHub landed a zero point zero zero zero zero one Sepolia Ether transaction in block eleven million three hundred seventy-nine thousand nine hundred four. The receipt shows the KeeperHub wallet, the allowlisted recipient, and successful finality.
+
+The first client request timed out after the chain had already confirmed. Radar Keeper recovered the same execution with the same idempotency key and prevented a duplicate. Every signal, decision, policy check, simulation, recovery event, and transaction proof is preserved in the audit trail.
+
+Radar Keeper combines agentic decisions with execution discipline: simulate first, spend within policy, recover safely, and prove every action.

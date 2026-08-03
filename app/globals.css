@@ -301,6 +301,197 @@ main {
   background: var(--line);
 }
 
+.proofPanel {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto 22px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 12px;
+  border-radius: 22px;
+  color: white;
+  background:
+    radial-gradient(circle at 8% 20%, rgba(9, 189, 231, 0.25), transparent 26rem),
+    radial-gradient(circle at 92% 90%, rgba(255, 116, 23, 0.17), transparent 24rem),
+    #07111f;
+  box-shadow: 0 30px 80px rgba(7, 17, 31, 0.2);
+}
+
+.proofStory,
+.proofReceipt {
+  padding: 34px;
+  border-radius: 15px;
+}
+
+.proofStory {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.proofStatus {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #74ddf4;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+
+.proofPulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2de39a;
+  box-shadow: 0 0 0 5px rgba(45, 227, 154, 0.13);
+}
+
+.proofStory h2 {
+  margin: 25px 0 18px;
+  font-size: clamp(38px, 5vw, 64px);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.proofStory p {
+  max-width: 540px;
+  margin: 0;
+  color: #aebdca;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.proofLink {
+  margin-top: 28px;
+  padding: 12px 15px;
+  border: 1px solid rgba(116, 221, 244, 0.3);
+  border-radius: 10px;
+  color: #a8efff;
+  background: rgba(9, 189, 231, 0.08);
+  font-size: 13px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.proofReceipt {
+  color: var(--ink);
+  background: #f8fbfc;
+}
+
+.receiptHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.receiptHead span {
+  display: block;
+  margin-bottom: 6px;
+  color: #7f8d9e;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.receiptHead strong {
+  color: var(--green);
+  font-size: 22px;
+  letter-spacing: 0.04em;
+}
+
+.confirmedMark {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  background: var(--green);
+  box-shadow: 0 0 0 8px rgba(12, 157, 103, 0.1);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.receiptGrid {
+  margin: 0;
+  padding: 18px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--line);
+}
+
+.receiptGrid div {
+  padding: 11px 8px;
+}
+
+.receiptGrid dt,
+.route span {
+  margin-bottom: 5px;
+  color: #8b99aa;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.receiptGrid dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.route {
+  padding: 22px 8px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.route div:last-child {
+  text-align: right;
+}
+
+.route span {
+  display: block;
+}
+
+.route code {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.routeArrow {
+  color: var(--cyan-dark);
+  font-size: 22px;
+}
+
+.recoveryNote {
+  padding: 15px 17px;
+  border: 1px solid #d7e8ef;
+  border-radius: 11px;
+  background: #edf7fa;
+}
+
+.recoveryNote span {
+  color: var(--cyan-dark);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.recoveryNote p {
+  margin: 7px 0 0;
+  color: #526476;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .grid {
   width: min(1180px, calc(100% - 40px));
   margin: 0 auto 22px;
@@ -557,6 +748,10 @@ footer p {
     grid-template-columns: 1fr;
   }
 
+  .proofPanel {
+    grid-template-columns: 1fr;
+  }
+
   .auditPanel {
     overflow: hidden;
   }
@@ -570,6 +765,7 @@ footer p {
   .hero,
   .nav,
   .pipeline,
+  .proofPanel,
   .grid,
   .auditPanel,
   footer {
@@ -601,8 +797,26 @@ footer p {
   }
 
   .panel,
+  .proofStory,
+  .proofReceipt,
   .auditPanel {
     padding: 22px;
+  }
+
+  .receiptGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .route {
+    grid-template-columns: 1fr;
+  }
+
+  .route div:last-child {
+    text-align: left;
+  }
+
+  .routeArrow {
+    transform: rotate(90deg);
   }
 
   .metrics {
